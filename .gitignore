@@ -4,3 +4,5 @@
 [Rr]elease
 .upload
 *.aps
+*.ncb
+*.vcproj.*.user
