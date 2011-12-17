@@ -72,14 +72,9 @@ can re-run =kbswitch= if you need to switch again later.)
   the change. To fix this, use =kbswitch= to reselect the selected
   language once the program looks to be ready.
 
-- The Ctrl+Alt+Del screen uses your default keyboard. Watch out when
-  using keyboard shortcuts, and in particular when entering your
-  password!
-
-  I doubt there's anything I can do about this; that screen is
-  presumably specially designed to be impervious to attack :)
-
-- Only tested on 32-bit Windows XP.
+- _XP only_ - the Ctrl+Alt+Del screen uses your default
+  keyboard. Watch out when using keyboard shortcuts, and in particular
+  when entering your password!
 
 * Other credits
 
