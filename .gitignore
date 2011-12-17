@@ -1,0 +1,6 @@
+*.suo
+*.vcxproj.user
+[Dd]ebug
+[Rr]elease
+.upload
+*.aps
