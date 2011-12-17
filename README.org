@@ -66,12 +66,10 @@ can re-run =kbswitch= if you need to switch again later.)
   you'll get your default default.
 
 - Satisfaction is not guaranteed when combined with other layout
-  switching programs. (=kbswitch= may behave correctly, but the tool
-  tip may be incorrect. Just needs fixing.)
+  switching programs.
 
 - If you change language when a program is loading, it may not pick up
-  the change. (There are probably other situations where this can
-  happen, too.) To fix this, use =kbswitch= to reselect the selected
+  the change. To fix this, use =kbswitch= to reselect the selected
   language once the program looks to be ready.
 
 - The Ctrl+Alt+Del screen uses your default keyboard. Watch out when
