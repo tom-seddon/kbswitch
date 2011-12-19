@@ -1,6 +1,7 @@
 #include "../common.inl"
 
-#define DLL_NAME "kbswitch2_dll.dll"
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 #ifdef _M_X64
 #define HOOKNAME(X) (X)
@@ -8,17 +9,51 @@
 #define HOOKNAME(X) ("_" X "@12")
 #endif
 
-static const TCHAR g_aWndClassName[]=_T("kbswitch2_helper_wnd");
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+static const TCHAR WND_CLASS_NAME[]=_T("kbswitch2_helper_wnd");
+
+static const char DLL_NAME[]="kbswitch2_dll_" PLATFORM_SUFFIX BUILD_SUFFIX ".dll";
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+static UINT g_quitMsg;
+static HMODULE g_hDLL;
+
+typedef void (*SetKeyboardLayoutFn)(HKL);
+static SetKeyboardLayoutFn g_pfnSetKeyboardLayout;
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
+	if(uMsg==g_quitMsg||uMsg==WM_CLOSE)
+	{
+		LOG("%s: msg=%u: time to quit.\n",__FUNCTION__,uMsg);
+
+		PostQuitMessage(0);
+		return 0;
+	}
+	else if(uMsg==WM_INPUTLANGCHANGEREQUEST)
+	{
+		LOG("%s: WM_INPUTLANGCHANGEREQUEST: HKL=%p.\n",__FUNCTION__,(HKL)lParam);
+
+		(*g_pfnSetKeyboardLayout)((HKL)lParam);
+	}
+
 	return DefWindowProc(hWnd,uMsg,wParam,lParam);
 }
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 static HWND CreateWnd(void)
 {
 	WNDCLASSEX w;
-	HWND wnd_h;
+	HWND hWnd;
 
 	w.cbClsExtra=0;
 	w.cbSize=sizeof w;
@@ -29,67 +64,91 @@ static HWND CreateWnd(void)
 	w.hIconSm=w.hIcon;
 	w.hInstance=GetModuleHandle(0);
 	w.lpfnWndProc=&WndProc;
-	w.lpszClassName=g_aWndClassName;
+	w.lpszClassName=WND_CLASS_NAME;
 	w.lpszMenuName=0;
 	w.style=CS_HREDRAW|CS_VREDRAW;
 
 	if(!RegisterClassEx(&w))
 		return NULL;
 
-	wnd_h=CreateWindow(g_aWndClassName,_T("kbswitch"),WS_OVERLAPPEDWINDOW,
+	hWnd=CreateWindow(WND_CLASS_NAME,_T("kbswitch_helper"),WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,0,0,
 		GetModuleHandle(0),0);
-	if(!wnd_h)
+	if(!hWnd)
 		return NULL;
 
 #ifdef _DEBUG
-	ShowWindow(wnd_h,SW_SHOW);
+	ShowWindow(hWnd,SW_SHOW);
 #endif//_DEBUG
 
-	return wnd_h;
+	return hWnd;
 }
 
-static HHOOK Hook(HMODULE dll_h,UINT type,const char *proc_name)
-{
-	HOOKPROC proc=(HOOKPROC)GetProcAddress(dll_h,proc_name);
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-	if(!proc)
+static FARPROC FindProc(const char *pProcName)
+{
+	FARPROC pfn=GetProcAddress(g_hDLL,pProcName);
+
+	if(!pfn)
 	{
-		dprintf("hook proc not found: %s\n",proc_name);
-		return NULL;
+		char msg[500];
+
+		wsprintfA(msg,"Export missing: \"%s\".",pProcName);
+
+		MessageBoxA(NULL,msg,DLL_NAME,MB_OK|MB_ICONERROR);
 	}
 
-	return SetWindowsHookEx(type,proc,dll_h,0);
+	return pfn;
 }
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 void Entry(void)
 {
-	HHOOK hooks[10];
-	int num_hooks=0;
-	HMODULE dll_h=NULL;
-	HWND wnd_h=NULL;
+	HHOOK hHook=NULL;
+	HOOKPROC pfnHookProc;
+	HWND hWnd=NULL;
 	int result=1;
 
-	dll_h=LoadLibrary(_T(DLL_NAME));
-	if(!dll_h)
+	g_quitMsg=RegisterWindowMessage(QUIT_MESSAGE_NAME);
+
+	g_hDLL=LoadLibraryA(DLL_NAME);
+	if(!g_hDLL)
 	{
-		MessageBox(NULL,_T("Failed to load DLL \"") _T(DLL_NAME) _T("\"."),_T("Startup failed"),MB_OK|MB_ICONERROR);
+		DWORD err=GetLastError();
+		char msg[500];
+
+		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,NULL,err,0,msg,sizeof msg,NULL);
+
+		MessageBoxA(NULL,msg,DLL_NAME,MB_OK|MB_ICONERROR);
 		goto done;
 	}
 
-	hooks[num_hooks++]=Hook(dll_h,WH_CBT,HOOKNAME("KBSwitchHookProc"));
-	hooks[num_hooks++]=Hook(dll_h,WH_CALLWNDPROCRET,HOOKNAME("KBSwitchCallWndProcRet"));
+	pfnHookProc=(HOOKPROC)FindProc(HOOKNAME("KBSwitchCBTHookProc"));
+	if(!pfnHookProc)
+		goto done;
 
-	wnd_h=CreateWnd();
+	g_pfnSetKeyboardLayout=(SetKeyboardLayoutFn)FindProc("SetKeyboardLayout");
+	if(!g_pfnSetKeyboardLayout)
+		goto done;
 
-	if(wnd_h)
+	hHook=SetWindowsHookEx(WH_CBT,pfnHookProc,g_hDLL,0);
+	if(!hHook)
+		goto done;
+
+	hWnd=CreateWnd();
+
+	if(hWnd)
 	{
 		for(;;)
 		{
 			int r;
 			MSG msg;
 
-			r=GetMessage(&msg,wnd_h,0,0);
+			r=GetMessage(&msg,hWnd,0,0);
 			if(r==0||r==-1)
 				break;
 
@@ -101,24 +160,26 @@ void Entry(void)
 	}
 
 done:
-	if(wnd_h)
+	if(hWnd)
 	{
-		DestroyWindow(wnd_h);
-		wnd_h=NULL;
+		DestroyWindow(hWnd);
+		hWnd=NULL;
 	}
 
+	if(hHook)
 	{
-		int i;
-
-		for(i=0;i<num_hooks;++i)
-			UnhookWindowsHookEx(hooks[i]);
+		UnhookWindowsHookEx(hHook);
+		hHook=NULL;
 	}
 
-	if(dll_h)
+	if(g_hDLL)
 	{
-		FreeLibrary(dll_h);
-		dll_h=NULL;
+		FreeLibrary(g_hDLL);
+		g_hDLL=NULL;
 	}
 
 	ExitProcess(result);
 }
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
