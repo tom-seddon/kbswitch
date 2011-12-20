@@ -1,27 +1,16 @@
 #include "../common.inl"
 
-#include <shlwapi.h>
-#include <shellapi.h>
+#include "resource.h"
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
 static const char MUTEX_NAME[]="kbswitch2_mutex";
 
-static const TCHAR WND_CLASS_NAME[]=_T("kbswitch2_wnd");
-
-// Got bored of dynamically allocating everything...
-enum {LOCALIZED_STR_SIZE=100};
+static const char WND_CLASS_NAME[]="kbswitch2_wnd";
 
 enum {NOTIFY_MSG=WM_APP+1};
 enum {NOTIFY_ID=1};
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-// http://blogs.msdn.com/b/michkap/archive/2006/05/06/591174.aspx -- :(
-static const char g_aRegKeyNameRoot[]="SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts\\";
-enum {REG_KEY_NAME_ROOT_LEN=sizeof g_aRegKeyNameRoot/sizeof g_aRegKeyNameRoot[0]-1};
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -31,96 +20,9 @@ struct Layout
 	struct Layout *pNextLayout;
 
 	HKL hkl;
-	TCHAR *pDisplayName;
+	wchar_t *pDisplayName;
 };
 typedef struct Layout Layout;
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-static TCHAR *GetRegString(HKEY hRootKey,const char *pKeyName,const wchar_t *pValueName)
-{
-	HKEY hKey;
-	DWORD valueType,valueSizeBytes;
-	int good=0;
-	TCHAR *pValueValue=0;
-
-	if(RegOpenKeyExA(hRootKey,pKeyName,0,KEY_READ,&hKey)!=ERROR_SUCCESS)
-		goto bye;
-
-	if(RegQueryValueEx(hKey,pValueName,0,&valueType,0,&valueSizeBytes)!=ERROR_SUCCESS)
-		goto bye;
-
-	if(valueType!=REG_SZ)
-		goto bye;
-
-	// Add one for the '\x0', if it wasn't there already, and make it
-	// at least LOCALIZED_STR_SIZE too.
-	valueSizeBytes+=sizeof(TCHAR);
-	valueSizeBytes=min(valueSizeBytes,LOCALIZED_STR_SIZE*sizeof(TCHAR));
-
-	pValueValue=LocalAlloc(0,valueSizeBytes);
-	if(!pValueValue)
-		goto bye;
-
-	if(RegQueryValueEx(hKey,pValueName,0,&valueType,(BYTE *)pValueValue,
-		&valueSizeBytes)!=ERROR_SUCCESS)
-	{
-		goto bye;
-	}
-
-	good=1;
-
-bye:
-	if(hKey)
-		RegCloseKey(hKey);
-
-	if(!good)
-	{
-		LocalFree(pValueValue);
-		pValueValue=0;
-	}
-
-	return pValueValue;
-}
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-static TCHAR *GetLayoutDisplayName(HKL hkl)
-{
-	TCHAR *pDisplayName;
-	char aRegKeyName[REG_KEY_NAME_ROOT_LEN+KL_NAMELENGTH];
-
-	// Activate keyboard layout to get its name, forming the registry key name.
-	{
-		HKL hklOld=GetKeyboardLayout(0);
-
-		if(!ActivateKeyboardLayout(hkl,0))
-			return 0;
-
-		lstrcpyA(aRegKeyName,g_aRegKeyNameRoot);
-
-		if(!GetKeyboardLayoutNameA(aRegKeyName+REG_KEY_NAME_ROOT_LEN))
-			return 0;
-
-		if(!ActivateKeyboardLayout(hklOld,0))
-			return 0;
-	}
-
-	pDisplayName=GetRegString(HKEY_LOCAL_MACHINE,aRegKeyName,_T("Layout Display Name"));
-	if(!pDisplayName)
-		return 0;
-
-	if(pDisplayName[0]==_T('@'))
-	{
-		// With any luck, SHLoadIndirectString will just leave the input alone
-		// if it fails...
-		SHLoadIndirectString(pDisplayName,pDisplayName,LOCALIZED_STR_SIZE,0);
-	}
-
-	return pDisplayName;
-}
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -248,24 +150,30 @@ static HWND g_hWnd;
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static void NotifyCtl(DWORD action,const TCHAR *pTip)
+static void NotifyCtl(DWORD action,const wchar_t *pTip)
 {
-	NOTIFYICONDATA nid;
+	NOTIFYICONDATAW nid;
 
 	nid.cbSize=sizeof nid;
 	nid.hWnd=g_hWnd;
 	nid.uID=NOTIFY_ID;
 	nid.uFlags=NIF_ICON|NIF_MESSAGE;
 	nid.uCallbackMessage=NOTIFY_MSG;
-	nid.hIcon=LoadIcon(NULL,IDI_APPLICATION);//GetModuleHandle(0),MAKEINTRESOURCE(IDI_ICON1));
+	nid.hIcon=LoadIcon(GetModuleHandle(NULL),MAKEINTRESOURCE(IDI_ICON1));
 
 	if(pTip)
 	{
+		enum {
+			MAX_TIP_SIZE=sizeof nid.szTip/sizeof nid.szTip[0],
+		};
+
 		nid.uFlags|=NIF_TIP;
-		lstrcpyn(nid.szTip,pTip,sizeof nid.szTip/sizeof nid.szTip[0]);
+
+		lstrcpynW(nid.szTip,pTip,MAX_TIP_SIZE);
+		nid.szTip[MAX_TIP_SIZE-1]=0;
 	}
 
-	Shell_NotifyIcon(action,&nid);
+	Shell_NotifyIconW(action,&nid);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -275,12 +183,12 @@ static void UpdateToolTip(void)
 {
 	Layout *pFirstLayout=CreateLayoutsList();
 	Layout *pActiveLayout=FindActiveLayout(pFirstLayout);
-	TCHAR *pDisplayName;
+	wchar_t *pDisplayName;
 
 	pActiveLayout=FindActiveLayout(pFirstLayout);
 
 	if(!pActiveLayout)
-		pDisplayName=_T("?");
+		pDisplayName=L"?";
 	else
 		pDisplayName=pActiveLayout->pDisplayName;
 
@@ -318,10 +226,10 @@ static void DoPopupMenu(void)
 				if(pLayout==pActiveLayout)
 					flags|=MF_CHECKED;
 
-				AppendMenu(hMenu,flags,id++,pLayout->pDisplayName);
+				AppendMenuW(hMenu,flags,id++,pLayout->pDisplayName);
 			}
 
-			AppendMenu(hMenu,MF_SEPARATOR,0,0);
+			AppendMenuW(hMenu,MF_SEPARATOR,0,0);
 		}
 		idLayoutsEnd=id;
 
@@ -348,7 +256,7 @@ static void DoPopupMenu(void)
 		while(idx-->0)
 			pLayout=pLayout->pNextLayout;
 
-		SystemParametersInfo(SPI_SETDEFAULTINPUTLANG,0,&pLayout->hkl,0);
+		//SystemParametersInfo(SPI_SETDEFAULTINPUTLANG,0,&pLayout->hkl,0);
 		PostMessage(HWND_BROADCAST,WM_INPUTLANGCHANGEREQUEST,0,(LPARAM)pLayout->hkl);
 	}
 
@@ -368,6 +276,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 			UpdateToolTip();
 		}
 		break;
+
+	case WM_RBUTTONUP:
+		// avoid injecting the DLL into explorer...
+		DoPopupMenu();
+		return 0;
 
 	case NOTIFY_MSG:
 		{
@@ -393,27 +306,25 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 
 static BOOL CreateWnd(void)
 {
-	WNDCLASSEX w;
+	WNDCLASSEXA w;
 
 	w.cbClsExtra=0;
 	w.cbSize=sizeof w;
 	w.cbWndExtra=0;
 	w.hbrBackground=0;//GetStockObject(NULL_BRUSH);
-	w.hCursor=0;//LoadCursor(0,IDC_ARROW);
-	w.hIcon=0;//LoadIcon(0,IDI_APPLICATION);
-	w.hIconSm=w.hIcon;
+	w.hCursor=LoadCursor(0,IDC_ARROW);
+	w.hIcon=LoadIcon(GetModuleHandle(NULL),MAKEINTRESOURCE(IDI_ICON1));
+	w.hIconSm=LoadIcon(GetModuleHandle(NULL),MAKEINTRESOURCE(IDI_ICON1));
 	w.hInstance=GetModuleHandle(0);
 	w.lpfnWndProc=&WndProc;
 	w.lpszClassName=WND_CLASS_NAME;
 	w.lpszMenuName=0;
 	w.style=CS_HREDRAW|CS_VREDRAW;
 
-	if(!RegisterClassEx(&w))
+	if(!RegisterClassExA(&w))
 		return 0;
 
-	g_hWnd=CreateWindow(WND_CLASS_NAME,_T("kbswitch"),WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,0,0,
-		GetModuleHandle(0),0);
+	g_hWnd=CreateWindowA(WND_CLASS_NAME,"kbswitch",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,0,0,GetModuleHandle(0),0);
 	if(!g_hWnd)
 		return FALSE;
 
@@ -432,7 +343,7 @@ static int Main(void)
 	if(!CreateWnd())
 		return 1;
 
-	NotifyCtl(NIM_ADD,_T(""));
+	NotifyCtl(NIM_ADD,L"");
 
 	UpdateToolTip();
 
@@ -441,7 +352,7 @@ static int Main(void)
 		int r;
 		MSG msg;
 
-		r=GetMessage(&msg,g_hWnd,0,0);
+		r=GetMessage(&msg,NULL,0,0);
 		if(r==0||r==-1)
 			break;
 
@@ -457,54 +368,56 @@ static int Main(void)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static BOOL RunHelper(const TCHAR *pEXEName)
+static const STARTUPINFOW SI_ZERO={0,};
+
+static BOOL RunHelper(const wchar_t *pEXEName)
 {
-	TCHAR *pFileName;
+	wchar_t *pFileName;
 	BOOL good;
-	STARTUPINFO si;
+	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;
 
 	{
 		DWORD moduleFileNameSize=32768;
-		TCHAR *pModuleFileName=LocalAlloc(0,moduleFileNameSize*sizeof *pModuleFileName);
-		TCHAR *p;
-		TCHAR *pLastSep=pModuleFileName;
+		wchar_t *pModuleFileName=LocalAlloc(0,moduleFileNameSize*sizeof *pModuleFileName);
+		wchar_t *p;
+		wchar_t *pLastSep=pModuleFileName;
 		DWORD fileNameSize;
 
-		GetModuleFileName(NULL,pModuleFileName,moduleFileNameSize);
+		GetModuleFileNameW(NULL,pModuleFileName,moduleFileNameSize);
 		pModuleFileName[moduleFileNameSize-1]=0;
 
-		for(p=pModuleFileName;*p!=0;p=CharNext(p))
+		for(p=pModuleFileName;*p!=0;p=CharNextW(p))
 		{
-			if(*p==_T('\\')||*p==_T('/'))
+			if(*p==L'\\'||*p==L'/')
 				pLastSep=p;
 		}
 
 		*pLastSep=0;
 
-		fileNameSize=lstrlen(pModuleFileName)+1+lstrlen(pEXEName)+1;
+		fileNameSize=lstrlenW(pModuleFileName)+1+lstrlenW(pEXEName)+1;
 		pFileName=LocalAlloc(0,fileNameSize*sizeof pFileName);
 
-		lstrcpy(pFileName,pModuleFileName);
-		lstrcat(pFileName,_T("\\"));
-		lstrcat(pFileName,pEXEName);
+		lstrcpyW(pFileName,pModuleFileName);
+		lstrcatW(pFileName,L"\\");
+		lstrcatW(pFileName,pEXEName);
 
 		LocalFree(pModuleFileName);
 		pModuleFileName=NULL;
 	}
 
-	ResetMem(&si,sizeof si);
+	si=SI_ZERO;
 	si.cb=sizeof si;
 
-	good=CreateProcess(pFileName,NULL,NULL,NULL,TRUE,0,NULL,NULL,&si,&pi);
+	good=CreateProcessW(pFileName,NULL,NULL,NULL,TRUE,0,NULL,NULL,&si,&pi);
 	if(!good)
 	{
 		DWORD err=GetLastError();
-		TCHAR msg[500];
+		wchar_t msg[500];
 
-		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,NULL,err,0,msg,sizeof msg/sizeof msg[0],NULL);
+		FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM,NULL,err,0,msg,sizeof msg/sizeof msg[0],NULL);
 
-		MessageBox(NULL,msg,pFileName,MB_OK|MB_ICONERROR);
+		MessageBoxW(NULL,msg,pFileName,MB_OK|MB_ICONERROR);
 	}
 
 	LocalFree(pFileName);
@@ -522,11 +435,11 @@ static BOOL RunHelpers(void)
 
 	if(IsWow64Process(GetCurrentProcess(),&isWOW64)&&isWOW64)
 	{
-		if(!RunHelper(_T("kbswitch2_helper_x64") _T(BUILD_SUFFIX) _T(".exe")))
+		if(!RunHelper(L"kbswitch2_helper_x64" W(BUILD_SUFFIX) L".exe"))
 			return FALSE;
 	}
 
-	if(!RunHelper(_T("kbswitch2_helper_x86") _T(BUILD_SUFFIX) _T(".exe")))
+	if(!RunHelper(L"kbswitch2_helper_x86" W(BUILD_SUFFIX) L".exe"))
 		return FALSE;
 
 	return TRUE;
@@ -537,7 +450,7 @@ static BOOL RunHelpers(void)
 
 void Entry(void)
 {
-	UINT quitMsg=RegisterWindowMessage(QUIT_MESSAGE_NAME);
+	UINT quitMsg=RegisterWindowMessageA(QUIT_MESSAGE_NAME);
 	HANDLE hMutex;
 	int result=1;
 

@@ -3,6 +3,11 @@
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+#define CBT_HOOK
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
 #ifdef _M_X64
 #define HOOKNAME(X) (X)
 #else
@@ -12,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static const TCHAR WND_CLASS_NAME[]=_T("kbswitch2_helper_wnd");
+static const char WND_CLASS_NAME[]="kbswitch2_helper_wnd";
 
 static const char DLL_NAME[]="kbswitch2_dll_" PLATFORM_SUFFIX BUILD_SUFFIX ".dll";
 
@@ -39,7 +44,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	}
 	else if(uMsg==WM_INPUTLANGCHANGEREQUEST)
 	{
-		LOG("%s: WM_INPUTLANGCHANGEREQUEST: HKL=%p.\n",__FUNCTION__,(HKL)lParam);
+		LOG("%s: WM_INPUTLANGCHANGEREQUEST: HKL=%p (.\n",__FUNCTION__,(HKL)lParam);
 
 		(*g_pfnSetKeyboardLayout)((HKL)lParam);
 	}
@@ -52,7 +57,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 
 static HWND CreateWnd(void)
 {
-	WNDCLASSEX w;
+	WNDCLASSEXA w;
 	HWND hWnd;
 
 	w.cbClsExtra=0;
@@ -68,10 +73,10 @@ static HWND CreateWnd(void)
 	w.lpszMenuName=0;
 	w.style=CS_HREDRAW|CS_VREDRAW;
 
-	if(!RegisterClassEx(&w))
+	if(!RegisterClassExA(&w))
 		return NULL;
 
-	hWnd=CreateWindow(WND_CLASS_NAME,_T("kbswitch_helper"),WS_OVERLAPPEDWINDOW,
+	hWnd=CreateWindowA(WND_CLASS_NAME,DLL_NAME,WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,0,0,
 		GetModuleHandle(0),0);
 	if(!hWnd)
@@ -113,7 +118,7 @@ void Entry(void)
 	HWND hWnd=NULL;
 	int result=1;
 
-	g_quitMsg=RegisterWindowMessage(QUIT_MESSAGE_NAME);
+	g_quitMsg=RegisterWindowMessageA(QUIT_MESSAGE_NAME);
 
 	g_hDLL=LoadLibraryA(DLL_NAME);
 	if(!g_hDLL)
@@ -127,17 +132,32 @@ void Entry(void)
 		goto done;
 	}
 
-	pfnHookProc=(HOOKPROC)FindProc(HOOKNAME("KBSwitchCBTHookProc"));
-	if(!pfnHookProc)
-		goto done;
-
 	g_pfnSetKeyboardLayout=(SetKeyboardLayoutFn)FindProc("SetKeyboardLayout");
 	if(!g_pfnSetKeyboardLayout)
+		goto done;
+
+#ifdef CBT_HOOK
+
+	pfnHookProc=(HOOKPROC)FindProc(HOOKNAME("KBSwitchCBTHookProc"));
+	if(!pfnHookProc)
 		goto done;
 
 	hHook=SetWindowsHookEx(WH_CBT,pfnHookProc,g_hDLL,0);
 	if(!hHook)
 		goto done;
+
+#else//CBT_HOOK
+
+	pfnHookProc=(HOOKPROC)FindProc(HOOKNAME("KBSwitchCallWndProcRet"));
+	if(!pfnHookProc)
+		goto done;
+
+	hHook=SetWindowsHookEx(WH_CALLWNDPROCRET,pfnHookProc,g_hDLL,0);
+	if(!hHook)
+		goto done;
+
+#endif//CBT_HOOK
+
 
 	hWnd=CreateWnd();
 
@@ -148,7 +168,7 @@ void Entry(void)
 			int r;
 			MSG msg;
 
-			r=GetMessage(&msg,hWnd,0,0);
+			r=GetMessage(&msg,NULL,0,0);
 			if(r==0||r==-1)
 				break;
 

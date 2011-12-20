@@ -19,9 +19,9 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir).Output"
-			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\Junk\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -47,6 +47,7 @@
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
+				AssemblerOutput="2"
 				WarningLevel="4"
 				DebugInformationFormat="3"
 			/>
@@ -95,9 +96,9 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir).Output"
-			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\Junk\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -126,8 +127,9 @@
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
+				AssemblerOutput="2"
 				WarningLevel="4"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -177,7 +179,19 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\icon1.ico"
+			>
+		</File>
+		<File
 			RelativePath=".\kbswitch2.c"
+			>
+		</File>
+		<File
+			RelativePath=".\resource.h"
+			>
+		</File>
+		<File
+			RelativePath=".\resource.rc"
 			>
 		</File>
 	</Files>

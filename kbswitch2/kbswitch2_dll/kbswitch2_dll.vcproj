@@ -22,9 +22,9 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir).Output"
-			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\Junk\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
-			CharacterSet="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -64,6 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x86d.dll"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="true"
@@ -97,7 +98,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir).Output"
-			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\Junk\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
 			CharacterSet="1"
 			>
@@ -140,6 +141,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64d.dll"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="true"
@@ -173,9 +175,9 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir).Output"
-			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\Junk\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -205,7 +207,7 @@
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -218,6 +220,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x86.dll"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="true"
@@ -253,7 +256,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir).Output"
-			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\Junk\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir).Build\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -299,6 +302,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64.dll"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="true"

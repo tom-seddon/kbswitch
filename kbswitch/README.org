@@ -1,0 +1,90 @@
+#+OPTIONS: toc:nil num:nil author:nil email:nil creator:nil timestamp:nil
+#+TITLE: kbswitch
+
+=kbswitch= lets you switch quickly and easily between keyboard layouts
+in Windows.
+
+If you've ever used Mac OS X -- it's now as easy as that.
+
+If you've never used Mac OS X, trust me: that means it's easy.
+
+* Features
+
+- Unintrusive. One discreet notification area icon. (Also, doesn't
+  randomly mess up Visual Studio debugging.)
+
+- Doesn't use a keyboard shortcut. No more accidental layout switches.
+
+- Reliable. No more arguments with the language bar.
+
+- Hassle-free. Single EXE, no install required, can run off thumb
+  drive, doesn't change your profile, doesn't save anything to disk.
+
+- Optional. Leave it running all the time, or run it just when you
+  need it.
+
+* Download
+
+[[./kbswitch.zip][=kbswitch.zip=]] (25K - EXE, docs, source code)
+
+* Installation
+
+Copy supplied =kbswitch.exe= somewhere, and run it.
+
+=kbswitch= is perfectly happy being run just when you need to switch
+layouts. You can also put a shortcut to it in the Startup folder of
+your Start Menu, so that it runs when Windows starts.
+
+=kbswitch= is a single EXE file, and doesn't need to save any data
+anywhere. You can run it off a flash drive or other removable storage.
+
+* Use
+
+When =kbswitch= is running, it will keep a little icon in the
+notification area, that looks a bit like a closeup of a keyboard.
+
+[[./doc_imgs/kbswitch_icon.png]]
+
+Hover over the icon to see the currently set layout.
+
+[[./doc_imgs/kbswitch_tip.png]]
+
+Right-click on the icon to get a popup menu listing available keyboard
+layouts. Select one to change to that layout.
+
+[[./doc_imgs/kbswitch_menu.png]]
+
+Select "Exit" to exit. The current keyboard layout remains set. (You
+can re-run =kbswitch= if you need to switch again later.)
+
+* Notes
+
+- If you look in the Regional and Language Options section of the
+  Control Panel after changing the layout, you'll see that the current
+  keyboard is set as the default. Don't worry -- if you change using
+  =kbswitch=, this new default is NOT saved. Next time you log on,
+  you'll get your default default.
+
+- Satisfaction is not guaranteed when combined with other layout
+  switching programs.
+
+- If you change language when a program is loading, it may not pick up
+  the change. To fix this, use =kbswitch= to reselect the selected
+  language once the program looks to be ready.
+
+- _XP only_ - the Ctrl+Alt+Del screen uses your default
+  keyboard. Watch out when using keyboard shortcuts, and in particular
+  when entering your password!
+
+* Other credits
+
+- The code for [[http://clabs.org/dvorak.htm][DVAssist]] demonstrated how to change the layout
+  properly. (My original attempt was way over-complicated, and didn't
+  work anyway.)
+
+- The icon comes from a freeware icons collection that I downloaded a
+  few years ago.
+
+* Feedback
+
+kbswitch snail tomseddon dot plus dot com

@@ -341,7 +341,7 @@ static void DoPopupMenu(void)
 		// Set new layout
 		int idx=cmd-idLayoutsBegin;
 
-		SystemParametersInfo(SPI_SETDEFAULTINPUTLANG,0,&pList->pHKLs[idx],0);
+		SystemParametersInfo(SPI_SETDEFAULTINPUTLANG,0,&pList->pHKLs[idx],SPIF_UPDATEINIFILE);
 		PostMessage(HWND_BROADCAST,WM_INPUTLANGCHANGEREQUEST,0,(LPARAM)pList->pHKLs[idx]);
 
 		NotifyCtl(NIM_MODIFY,pList->ppDisplayNames[idx]);
@@ -443,7 +443,7 @@ static int Main()
 		int r;
 		MSG msg;
 
-		r=GetMessage(&msg,g_hWnd,0,0);
+		r=GetMessage(&msg,NULL,0,0);
 		if(r==0||r==-1)
 			break;
 
@@ -470,7 +470,7 @@ void EntryPoint(void)
 	{
 		hMutex=CreateMutexA(0,FALSE,g_aMutexName);
 
-			r=Main();
+		r=Main();
 
 		ReleaseMutex(hMutex);
 	}
