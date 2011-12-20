@@ -3,11 +3,6 @@
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-#define CBT_HOOK
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
 #ifdef _M_X64
 #define HOOKNAME(X) (X)
 #else
@@ -63,9 +58,9 @@ static HWND CreateWnd(void)
 	w.cbClsExtra=0;
 	w.cbSize=sizeof w;
 	w.cbWndExtra=0;
-	w.hbrBackground=0;//GetStockObject(NULL_BRUSH);
-	w.hCursor=0;//LoadCursor(0,IDC_ARROW);
-	w.hIcon=0;//LoadIcon(0,IDI_APPLICATION);
+	w.hbrBackground=0;
+	w.hCursor=NULL;
+	w.hIcon=NULL;
 	w.hIconSm=w.hIcon;
 	w.hInstance=GetModuleHandle(0);
 	w.lpfnWndProc=&WndProc;
@@ -136,8 +131,6 @@ void Entry(void)
 	if(!g_pfnSetKeyboardLayout)
 		goto done;
 
-#ifdef CBT_HOOK
-
 	pfnHookProc=(HOOKPROC)FindProc(HOOKNAME("KBSwitchCBTHookProc"));
 	if(!pfnHookProc)
 		goto done;
@@ -145,19 +138,6 @@ void Entry(void)
 	hHook=SetWindowsHookEx(WH_CBT,pfnHookProc,g_hDLL,0);
 	if(!hHook)
 		goto done;
-
-#else//CBT_HOOK
-
-	pfnHookProc=(HOOKPROC)FindProc(HOOKNAME("KBSwitchCallWndProcRet"));
-	if(!pfnHookProc)
-		goto done;
-
-	hHook=SetWindowsHookEx(WH_CALLWNDPROCRET,pfnHookProc,g_hDLL,0);
-	if(!hHook)
-		goto done;
-
-#endif//CBT_HOOK
-
 
 	hWnd=CreateWnd();
 

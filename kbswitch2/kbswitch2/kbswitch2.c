@@ -114,34 +114,6 @@ bye:
 	return pFirstLayout;
 }
 
-// 	dprintf(_T("%d layouts:\n"),pList->numHKLs);
-// 	for(i=0;i<pList->numHKLs;++i)
-// 	{
-// 		// 		TCHAR aLayoutName[LOCALIZED_STR_SIZE];
-// 		// 		TCHAR aCountryName[LOCALIZED_STR_SIZE];
-// 		// 
-// 		// 		if(!GetCountryName(g_pHKLs[i],aCountryName))
-// 		// 			return 0;
-// 
-// 		pList->ppDisplayNames[i]=GetLayoutDisplayName(pList->pHKLs[i]);
-// 		if(!pList->ppDisplayNames[i])
-// 			goto bye;
-// 
-// 		dprintf(_T("    %u. HKL=0x%08X: \"%s\".\n"),i,pList->pHKLs[i],pList->ppDisplayNames[i]);
-// 	}
-// 
-// 	good=1;
-// 
-// bye:
-// 	if(!good)
-// 	{
-// 		DeleteLayoutsList(pList);
-// 		pList=0;
-// 	}
-// 
-// 	return pList;
-// }
-
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 

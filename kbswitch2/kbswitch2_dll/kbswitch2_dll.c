@@ -37,28 +37,10 @@ void SetKeyboardLayout(HKL hKL)
 
 static void SetWindowKeyboardLayout(const char *pReason,HWND hWnd)
 {
-	LOG("%s: hwnd=%p hkl=%p.",pReason,hWnd,g_hKL);//,GetLayoutDisplayName(g_hKL));
+	LOG("%s: hwnd=%p hkl=%p.",pReason,hWnd,g_hKL);
 
  	if(g_hKL)
  		PostMessage(hWnd,WM_INPUTLANGCHANGEREQUEST,0,(LPARAM)g_hKL);
-}
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-__declspec(dllexport)
-LRESULT CALLBACK KBSwitchCallWndProcRet(int nCode,WPARAM wParam,LPARAM lParam)
-{
-	if(nCode==HC_ACTION)
-	{
-		//BOOL sent_by_current_process=!!wParam;
-		CWPRETSTRUCT *rs=(CWPRETSTRUCT *)lParam;
-
-		if(rs->message==WM_CREATE)
-			SetWindowKeyboardLayout("WM_CREATE ret",rs->hwnd);
-	}
-
-	return CallNextHookEx(NULL,nCode,wParam,lParam);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -69,14 +51,6 @@ LRESULT CALLBACK KBSwitchCBTHookProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	switch(nCode)
 	{
-		// HCBT_CREATEWND isn't great, because every UI element is a window, and
-        // so the hook gets called a lot.
-// 	case HCBT_CREATEWND:
-// 		{
-// 			SetWindowKeyboardLayout("HCBT_CREATEWND",(HWND)wParam);
-// 		}
-// 		break;
-
 	case HCBT_SETFOCUS:
 		{
 			SetWindowKeyboardLayout("HCBT_SETFOCUS",(HWND)wParam);
