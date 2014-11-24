@@ -6,3 +6,5 @@
 *.aps
 *.ncb
 *.vcproj.*.user
+\#*\#
+.\#*
