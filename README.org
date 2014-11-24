@@ -1,13 +1,26 @@
 * kbswitch
 
-=kbswitch= switches the keyboard layout in Windows, globally. 
+=kbswitch= switches the keyboard layout in Windows, globally.
+
+To run it, run =kbswitch/bin/kbswitch.exe=. (If you want to copy it to
+another PC, this is the only file necessary - the program is entirely
+self-contained.)
+
+For instructions, see [[kbswitch/README.org][=kbswitch/README.org=]].
 
 Works on Windows XP.
 
 * kbswitch2
 
+*=kbswitch2= is experimental!*
+
 =kbswitch2= switches the keyboard layout in Windows, globally.
+
+To run it, run =kbswitch2/bin/kbswitch2.exe=. (If you want to copy it
+to another PC, you need all the files in this folder - unfortunately
+=kbswitch2= is a bit more complicated than =kbswitch=.)
 
 Should work on all editions of XP, Vista and Windows 7, but only
 tested on Windows 7 x64.
 
+*=kbswitch2= is experimental!*
