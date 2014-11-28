@@ -21,10 +21,33 @@ to another PC, you'll need all the files from this folder -
 unfortunately =kbswitch2= is a bit more complicated internally than
 =kbswitch=.)
 
-In operation, =kbswitch2= works just like =kbswitch=, so the
-documentation is the same: [[kbswitch/README.org]].
+Once it's running, =kbswitch2= works just like =kbswitch=, so see here
+for documentation: [[kbswitch/README.org]].
 
 Should work on all editions of XP, Vista and Windows 7, but only
 tested on Windows 7 x64.
+
+*=kbswitch2= is experimental!*
+
+=kbswitch2= also has command-line options. Add these to the end of the
+=Target= edit box in the shortcut properties, or simply provide them
+on the command line (e.g., if you're running =kbswitch2= from a batch
+file).
+
+To display a window as well as the notification icon, specify
+=/showWindow=. Right clicking in the window brings up the menu you'd
+get if you right clicked on the notification icon.
+
+To specify a keyboard layout to be selected on startup, simply specify
+its name on the command line. Use quotes if the keyboard name contains
+spaces. 
+
+The order doesn't matter and the string comparison is
+case-insensitive. For example, to select the Dvorak layout on startup,
+you could run =kbswitch2= supplying any of the following:
+
+: "united states-dvorak"
+: /showwindow "united states-dvorak"
+: "united states-dvorak" /showwindow 
 
 *=kbswitch2= is experimental!*
