@@ -9,8 +9,18 @@ static const char MUTEX_NAME[]="kbswitch2_mutex";
 
 static const char WND_CLASS_NAME[]="kbswitch2_wnd";
 
-enum {NOTIFY_MSG=WM_APP+1};
+enum {
+	NOTIFY_MSG=WM_APP+1,
+	SHOWTIP_MSG,
+};
 enum {NOTIFY_ID=1};
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+static UINT g_quitMsg;
+static UINT g_settingsMsg;
+static HWND g_hWnd;
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -19,6 +29,8 @@ struct Options
 {
 	wchar_t *pLayoutToSet;
 	BOOL showWindow;
+	BOOL nextLayout;
+	BOOL prevLayout;
 };
 typedef struct Options Options;
 
@@ -37,6 +49,26 @@ typedef struct Layout Layout;
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+// If this function is optimized, VC++ strips it out and replaces references to
+// it with references to memset. Except that memset isn't available, because I'm
+// not linking with the C runtime. Which is why I'm writing this function in the
+// first place.
+//
+// THIS ENTIRE SITUATION IS STUPID. ALL OF IT.
+
+#pragma optimize("",off)
+void ZeroFill(void *p,size_t n)
+{
+	size_t i;
+
+	for(i=0;i<n;++i)
+		((char *)p)[i]=0;
+}
+#pragma optimize("",on)
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
 static Layout *FindActiveLayout(Layout *pFirstLayout)
 {
 	Layout *pLayout;
@@ -46,6 +78,25 @@ static Layout *FindActiveLayout(Layout *pFirstLayout)
 	{
 		if(pLayout->hkl==hkl)
 			return pLayout;
+	}
+
+	return NULL;
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+static Layout *FindLayoutByName(Layout *pFirstLayout,const wchar_t *pName)
+{
+	if(pName)
+	{
+		Layout *pLayout;
+
+		for(pLayout=pFirstLayout;pLayout;pLayout=pLayout->pNextLayout)
+		{
+			if(lstrcmpiW(pLayout->pDisplayName,pName)==0)
+				return pLayout;
+		}
 	}
 
 	return NULL;
@@ -127,32 +178,38 @@ bye:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static HWND g_hWnd;
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-static void NotifyCtl(DWORD action,const wchar_t *pTip)
+static void NotifyCtl(DWORD action,const wchar_t *pTip,UINT extraFlags)
 {
 	NOTIFYICONDATAW nid;
+
+	ZeroFill(&nid,sizeof nid);
 
 	nid.cbSize=sizeof nid;
 	nid.hWnd=g_hWnd;
 	nid.uID=NOTIFY_ID;
-	nid.uFlags=NIF_ICON|NIF_MESSAGE;
+	nid.uFlags=NIF_ICON|NIF_MESSAGE|extraFlags;
 	nid.uCallbackMessage=NOTIFY_MSG;
 	nid.hIcon=LoadIcon(GetModuleHandle(NULL),MAKEINTRESOURCE(IDI_ICON1));
+	nid.uTimeout=500;
 
 	if(pTip)
 	{
 		enum {
 			MAX_TIP_SIZE=sizeof nid.szTip/sizeof nid.szTip[0],
+			MAX_INFO_SIZE=sizeof nid.szInfo/sizeof nid.szInfo[0],
+			MAX_INFO_TITLE_SIZE=sizeof nid.szInfoTitle/sizeof nid.szInfoTitle[0],
 		};
 
 		nid.uFlags|=NIF_TIP;
 
 		lstrcpynW(nid.szTip,pTip,MAX_TIP_SIZE);
 		nid.szTip[MAX_TIP_SIZE-1]=0;
+
+		lstrcpynW(nid.szInfo,pTip,MAX_INFO_SIZE);
+		nid.szInfo[MAX_INFO_SIZE-1]=0;
+
+		lstrcpynW(nid.szInfoTitle,L"kbswitch2",MAX_INFO_TITLE_SIZE);
+		nid.szInfoTitle[MAX_INFO_TITLE_SIZE-1]=0;
 	}
 
 	Shell_NotifyIconW(action,&nid);
@@ -161,11 +218,12 @@ static void NotifyCtl(DWORD action,const wchar_t *pTip)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static void UpdateToolTip(void)
+static void UpdateToolTip(BOOL info)
 {
 	Layout *pFirstLayout=CreateLayoutsList();
 	Layout *pActiveLayout=FindActiveLayout(pFirstLayout);
 	wchar_t *pDisplayName;
+	UINT extraFlags;
 
 	pActiveLayout=FindActiveLayout(pFirstLayout);
 
@@ -174,7 +232,11 @@ static void UpdateToolTip(void)
 	else
 		pDisplayName=pActiveLayout->pDisplayName;
 
-	NotifyCtl(NIM_MODIFY,pDisplayName);
+	extraFlags=0;
+	if(info)
+		extraFlags=NIF_INFO;
+
+	NotifyCtl(NIM_MODIFY,pDisplayName,extraFlags);
 
 	DeleteLayoutList(pFirstLayout);
 	pFirstLayout=NULL;
@@ -183,53 +245,52 @@ static void UpdateToolTip(void)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static void SetLayoutByHandle(HKL hkl)
+static void SetLayoutByHandle(HKL hkl,BOOL showTip)
 {
 	PostMessage(HWND_BROADCAST,WM_INPUTLANGCHANGEREQUEST,0,(LPARAM)hkl);
+
+	if(showTip)
+		PostMessage(g_hWnd,SHOWTIP_MSG,0,0);
 }
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static void SetLayoutByDisplayName(const wchar_t *pName)
+static HKL FindLayoutHandleForDisplayName(const wchar_t *pName)
 {
-	Layout *pFirstLayout,*pLayout;
-//	int nameLen=lstrlenW(pName);
+	HKL hkl;
+	Layout *pFirstLayout=CreateLayoutsList();
+	Layout *pLayout=FindLayoutByName(pFirstLayout,pName);
 
-	if(!pName)
-		return;
+	if(pLayout)
+		hkl=pLayout->hkl;
+	else
+		hkl=GetKeyboardLayout(0);
 
-	//LOG("Layout to set: \"%S\"\n",pName);
-
-	pFirstLayout=CreateLayoutsList();
-
-	for(pLayout=pFirstLayout;pLayout;pLayout=pLayout->pNextLayout)
-	{
-		if(lstrcmpiW(pLayout->pDisplayName,pName)==0)
-		{
-			SetLayoutByHandle(pLayout->hkl);
-			break;
-		}
-
-// 		int i,displayNameLen=lstrlenW(pLayout->pDisplayName);
-// 
-// 		//LOG("Checking: %d: \"%S\"\n",displayNameLen,pLayout->pDisplayName);
-// 
-// 		for(i=0;i<=displayNameLen-nameLen;++i)
-// 		{
-// 			int result=CompareStringW(LOCALE_INVARIANT,NORM_IGNORECASE,pLayout->pDisplayName+i,nameLen,pName,nameLen);
-// 
-// 			if(result==CSTR_EQUAL)
-// 			{
-// 				SetLayoutByHandle(pLayout->hkl);
-// 				goto done;
-// 			}
-// 		}
-	}
-
-//done:;
 	DeleteLayoutList(pFirstLayout);
 	pFirstLayout=NULL;
+
+	return hkl;
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+static void ApplyOptions(const Options *options)
+{
+	if(options->pLayoutToSet)
+	{
+		HKL hkl=FindLayoutHandleForDisplayName(options->pLayoutToSet);
+		PostMessage(HWND_BROADCAST,g_settingsMsg,SETTINGS_SET,(LPARAM)hkl);
+	}
+	else if(options->nextLayout)
+	{
+		PostMessage(HWND_BROADCAST,g_settingsMsg,SETTINGS_NEXT,0);
+	}
+	else if(options->prevLayout)
+	{
+		PostMessage(HWND_BROADCAST,g_settingsMsg,SETTINGS_PREV,0);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -290,7 +351,7 @@ static void DoPopupMenu(void)
 		while(idx-->0)
 			pLayout=pLayout->pNextLayout;
 
-		SetLayoutByHandle(pLayout->hkl);
+		SetLayoutByHandle(pLayout->hkl,FALSE);
 	}
 
 	DeleteLayoutList(pFirstLayout);
@@ -307,6 +368,61 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
 	switch(uMsg)
 	{
+	default:
+		if(uMsg==g_settingsMsg)
+		{
+			if(wParam==SETTINGS_NEXT||wParam==SETTINGS_PREV)
+			{
+				Layout *pFirstLayout,*pActiveLayout;
+
+				pFirstLayout=CreateLayoutsList();
+				pActiveLayout=FindActiveLayout(pFirstLayout);
+
+				if(pActiveLayout)
+				{
+					Layout *pNewLayout;
+
+					LOG("Active layout: \"%S\"\n",pActiveLayout->pDisplayName);
+					LOG("wParam=%d\n",(int)wParam);
+
+					if(wParam==SETTINGS_NEXT)
+					{
+						pNewLayout=pActiveLayout->pNextLayout;
+						if(!pNewLayout)
+							pNewLayout=pFirstLayout;
+					}
+					else
+					{
+						Layout *pNextLayout;
+						if(pActiveLayout==pFirstLayout)
+							pNextLayout=NULL;
+						else
+							pNextLayout=pActiveLayout;
+
+						for(pNewLayout=pFirstLayout;pNewLayout;pNewLayout=pNewLayout->pNextLayout)
+						{
+							if(pNewLayout->pNextLayout==pNextLayout)
+								break;
+						}
+					}
+
+					if(pNewLayout)
+					{
+						LOG("New layout: \"%S\"\n",pNewLayout->pDisplayName);
+						SetLayoutByHandle(pNewLayout->hkl,TRUE);
+					}
+				}
+
+				DeleteLayoutList(pFirstLayout);
+				pFirstLayout=NULL;
+			}
+			else if(wParam==SETTINGS_SET)
+			{
+				SetLayoutByHandle((HKL)lParam,TRUE);
+			}
+		}
+		break;
+
 	case WM_PAINT:
 		{
 			RECT client;
@@ -330,14 +446,16 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 		return 0;
 
 	case WM_INPUTLANGCHANGEREQUEST:
-		{
-			UpdateToolTip();
-		}
+		UpdateToolTip(FALSE);
 		break;
 
 	case WM_RBUTTONUP:
 		// avoid injecting the DLL into explorer...
 		DoPopupMenu();
+		return 0;
+
+	case SHOWTIP_MSG:
+		UpdateToolTip(TRUE);
 		return 0;
 
 	case NOTIFY_MSG:
@@ -403,11 +521,15 @@ static int Main(const Options *options)
 	if(!CreateWnd(options->showWindow))
 		return 1;
 
-	NotifyCtl(NIM_ADD,L"");
+	NotifyCtl(NIM_ADD,L"",0);
 
-	UpdateToolTip();
+	UpdateToolTip(FALSE);
 
-	SetLayoutByDisplayName(options->pLayoutToSet);
+	if(options->pLayoutToSet)
+	{
+		HKL hkl=FindLayoutHandleForDisplayName(options->pLayoutToSet);
+		SetLayoutByHandle(hkl,FALSE);
+	}
 
 	for(;;)
 	{
@@ -422,7 +544,7 @@ static int Main(const Options *options)
 		DispatchMessage(&msg);
 	}
 
-	NotifyCtl(NIM_DELETE,NULL);
+	NotifyCtl(NIM_DELETE,NULL,0);
 
 	return 0;
 }
@@ -521,6 +643,10 @@ static void ProcessCommandLine(Options *options)
 	{
 		if(lstrcmpiW(ppArgs[i],L"/showwindow")==0)
 			options->showWindow=TRUE;
+		else if(lstrcmpiW(ppArgs[i],L"/nextlayout")==0)
+			options->nextLayout=TRUE;
+		else if(lstrcmpiW(ppArgs[i],L"/prevlayout")==0)
+			options->prevLayout=TRUE;
 		else
 		{
 			// Well... whatever it is, assume it's a keyboard layout...
@@ -540,11 +666,14 @@ static void ProcessCommandLine(Options *options)
 
 void Entry(void)
 {
-	UINT quitMsg=RegisterWindowMessageA(QUIT_MESSAGE_NAME);
 	HANDLE hMutex;
 	int result=1;
-	Options options={0,};
+	Options options;
 
+	g_quitMsg=RegisterWindowMessageA(QUIT_MESSAGE_NAME);
+	g_settingsMsg=RegisterWindowMessageA(SETTINGS_MESSAGE_NAME);
+
+	ZeroFill(&options,sizeof options);
 	ProcessCommandLine(&options);
 
 #ifdef _DEBUG
@@ -552,21 +681,33 @@ void Entry(void)
 #endif
 
 	hMutex=OpenMutexA(MUTEX_ALL_ACCESS,FALSE,MUTEX_NAME);
-	if(!hMutex)
+	if(hMutex)
 	{
-		hMutex=CreateMutexA(0,FALSE,MUTEX_NAME);
-
-		if(!RunHelpers())
-			result=1;
+		// Already running.
+		ApplyOptions(&options);
+	}
+	else
+	{
+		if(options.nextLayout||options.prevLayout)
+		{
+			// Don't do anything.
+		}
 		else
 		{
-			result=Main(&options);
+			hMutex=CreateMutexA(0,FALSE,MUTEX_NAME);
 
-			ReleaseMutex(hMutex);
-			hMutex=NULL;
+			if(!RunHelpers())
+				result=1;
+			else
+			{
+				result=Main(&options);
+
+				ReleaseMutex(hMutex);
+				hMutex=NULL;
+			}
+
+			PostMessage(HWND_BROADCAST,g_quitMsg,0,0);
 		}
-
-		PostMessage(HWND_BROADCAST,quitMsg,0,0);
 	}
 
 	LocalFree(options.pLayoutToSet);
