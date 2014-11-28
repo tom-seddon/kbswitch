@@ -565,9 +565,9 @@ void Entry(void)
 			ReleaseMutex(hMutex);
 			hMutex=NULL;
 		}
-	}
 
-	PostMessage(HWND_BROADCAST,quitMsg,0,0);
+		PostMessage(HWND_BROADCAST,quitMsg,0,0);
+	}
 
 	LocalFree(options.pLayoutToSet);
 	options.pLayoutToSet=NULL;
