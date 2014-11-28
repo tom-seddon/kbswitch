@@ -1,0 +1,109 @@
+#+OPTIONS: toc:nil num:nil author:nil email:nil creator:nil timestamp:nil
+#+TITLE: kbswitch2
+
+=kbswitch2= lets you switch quickly and easily between keyboard layouts
+in Windows.
+
+If you've ever used Mac OS X -- it's now as easy as that.
+
+If you've never used Mac OS X, trust me: that means it's easy.
+
+* Features
+
+- Unintrusive. One discreet notification area icon. (Also, doesn't
+  randomly mess up Visual Studio debugging.)
+
+- Doesn't use a keyboard shortcut. No more accidental layout switches.
+  (Note: can be integrated with keyboard shortcut programs such as
+  [[http://www.autohotkey.com/][AutoHotkey]], if you o want keyboard control.)
+
+- Reliable. No more arguments with the language bar.
+
+- Hassle-free. No installation required, can run off thumb drive,
+  doesn't change your profile, doesn't save anything to disk.
+
+- Can integrate with 
+
+* Download
+
+*kbswitch2 is experimental* - you need to get it from the github repo!
+
+* Installation
+
+Copy kbswitch2's =bi= folder somewhere (rename it if you like), and
+run =kbswitch2.exe=. You could put a shortcut to it in the Startup
+folder of your Start Menu, so that it runs when Windows starts.
+
+=kbswitch2= doesn't need to save any data anywhere. You can run it off
+a flash drive or other removable storage.
+
+* Use
+
+When =kbswitch2= is running, it will keep a little icon in the
+notification area, that looks a bit like a closeup of a keyboard.
+
+[[./doc_imgs/kbswitch_icon.png]]
+
+Hover over the icon to see the currently set layout.
+
+[[./doc_imgs/kbswitch_tip.png]]
+
+Right-click on the icon to get a popup menu listing available keyboard
+layouts. Select one to change to that layout.
+
+[[./doc_imgs/kbswitch_menu.png]]
+
+Select "Exit" to exit. The current keyboard layout remains set for
+active applications. You may find that when you run other
+applications, they use your default keyboard layout.
+
+(You can re-run =kbswitch2= to sort this out.)
+
+* Command line options
+
+=kbswitch2= supports a couple of command line options.
+
+- =/showWindow= - if specified, show a normal window as well as the
+  notification icon. You can right click in the window to get the
+  popup menu.
+
+- =/nextLayout=, =/prevLayout= /does nothing unless =kbswitch2= is
+  already running/ - select the next or previous keyboard layout in
+  the list. Intended for use with AutoHotkey, so you can assign
+  keyboard shortcuts to cycle through the list of layouts. (If
+  =kbswitch2= isn't running, doing this will do absolutely nothing, so
+  you won't load =kbswitch2= accidentally.)
+
+If you specify anything else on the command line, it's interpreted as
+the name (ignoring case) of a keyboard layout to select. If
+=kbswitch2= is running, that layout will be selected; if it's not
+running, it will be started.
+
+For example, to select the Dvorak layout:
+
+: kbswitch2 "united states-dvorak"
+
+* Notes
+
+- *kbswitch2 is experimental*!
+
+- If you change language when a program is loading, it may not pick up
+  the change. To fix this, use =kbswitch= to reselect the selected
+  language once the program looks to be ready.
+
+- _XP only_ - the Ctrl+Alt+Del screen uses your default
+  keyboard. Watch out when using keyboard shortcuts, and in particular
+  when entering your password!
+
+* Other credits
+
+- The code for [[http://clabs.org/dvorak.htm][DVAssist]] demonstrated how to change the layout
+  properly. (My original attempt was way over-complicated, and didn't
+  work anyway.)
+
+- The icon comes from a freeware icons collection that I downloaded a
+  few years ago.
+
+* Feedback
+
+kbswitch snail tomseddon dot plus dot com
