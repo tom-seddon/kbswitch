@@ -18,8 +18,7 @@ enum {NOTIFY_ID=1};
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static UINT g_quitMsg;
-static UINT g_settingsMsg;
+static UINT g_controlMsg;
 static HWND g_hWnd;
 
 //////////////////////////////////////////////////////////////////////////
@@ -281,15 +280,15 @@ static void ApplyOptions(const Options *options)
 	if(options->pLayoutToSet)
 	{
 		HKL hkl=FindLayoutHandleForDisplayName(options->pLayoutToSet);
-		PostMessage(HWND_BROADCAST,g_settingsMsg,SETTINGS_SET,(LPARAM)hkl);
+		PostMessage(HWND_BROADCAST,g_controlMsg,CONTROL_SET_LAYOUT,(LPARAM)hkl);
 	}
 	else if(options->nextLayout)
 	{
-		PostMessage(HWND_BROADCAST,g_settingsMsg,SETTINGS_NEXT,0);
+		PostMessage(HWND_BROADCAST,g_controlMsg,CONTROL_NEXT_LAYOUT,0);
 	}
 	else if(options->prevLayout)
 	{
-		PostMessage(HWND_BROADCAST,g_settingsMsg,SETTINGS_PREV,0);
+		PostMessage(HWND_BROADCAST,g_controlMsg,CONTROL_PREV_LAYOUT,0);
 	}
 }
 
@@ -369,9 +368,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	switch(uMsg)
 	{
 	default:
-		if(uMsg==g_settingsMsg)
+		if(uMsg==g_controlMsg)
 		{
-			if(wParam==SETTINGS_NEXT||wParam==SETTINGS_PREV)
+			if(wParam==CONTROL_NEXT_LAYOUT||wParam==CONTROL_PREV_LAYOUT)
 			{
 				Layout *pFirstLayout,*pActiveLayout;
 
@@ -385,7 +384,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 					LOG("Active layout: \"%S\"\n",pActiveLayout->pDisplayName);
 					LOG("wParam=%d\n",(int)wParam);
 
-					if(wParam==SETTINGS_NEXT)
+					if(wParam==CONTROL_NEXT_LAYOUT)
 					{
 						pNewLayout=pActiveLayout->pNextLayout;
 						if(!pNewLayout)
@@ -416,7 +415,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 				DeleteLayoutList(pFirstLayout);
 				pFirstLayout=NULL;
 			}
-			else if(wParam==SETTINGS_SET)
+			else if(wParam==CONTROL_SET_LAYOUT)
 			{
 				SetLayoutByHandle((HKL)lParam,TRUE);
 			}
@@ -670,8 +669,7 @@ void Entry(void)
 	int result=1;
 	Options options;
 
-	g_quitMsg=RegisterWindowMessageA(QUIT_MESSAGE_NAME);
-	g_settingsMsg=RegisterWindowMessageA(SETTINGS_MESSAGE_NAME);
+	g_controlMsg=RegisterWindowMessageA(CONTROL_MESSAGE_NAME);
 
 	ZeroFill(&options,sizeof options);
 	ProcessCommandLine(&options);
@@ -706,7 +704,7 @@ void Entry(void)
 				hMutex=NULL;
 			}
 
-			PostMessage(HWND_BROADCAST,g_quitMsg,0,0);
+			PostMessage(HWND_BROADCAST,g_controlMsg,CONTROL_QUIT,0);
 		}
 	}
 

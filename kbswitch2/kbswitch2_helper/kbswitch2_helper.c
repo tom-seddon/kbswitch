@@ -19,7 +19,7 @@ static const char DLL_NAME[]="kbswitch2_dll_" PLATFORM_SUFFIX BUILD_SUFFIX ".dll
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-static UINT g_quitMsg;
+static UINT g_controlMsg;
 static HMODULE g_hDLL;
 
 typedef void (*SetKeyboardLayoutFn)(HKL);
@@ -30,7 +30,7 @@ static SetKeyboardLayoutFn g_pfnSetKeyboardLayout;
 
 static LRESULT CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
-	if(uMsg==g_quitMsg||uMsg==WM_CLOSE)
+	if((uMsg==g_controlMsg&&wParam==CONTROL_QUIT)||uMsg==WM_CLOSE)
 	{
 		LOG("%s: msg=%u: time to quit.\n",__FUNCTION__,uMsg);
 
@@ -113,7 +113,7 @@ void Entry(void)
 	HWND hWnd=NULL;
 	int result=1;
 
-	g_quitMsg=RegisterWindowMessageA(QUIT_MESSAGE_NAME);
+	g_controlMsg=RegisterWindowMessageA(CONTROL_MESSAGE_NAME);
 
 	g_hDLL=LoadLibraryA(DLL_NAME);
 	if(!g_hDLL)
