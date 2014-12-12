@@ -15,14 +15,12 @@ If you've never used Mac OS X, trust me: that means it's easy.
 
 - Doesn't use a keyboard shortcut. No more accidental layout switches.
   (Note: can be integrated with keyboard shortcut programs such as
-  [[http://www.autohotkey.com/][AutoHotkey]], if you o want keyboard control.)
+  [[http://www.autohotkey.com/][AutoHotkey]], if you want keyboard control.)
 
 - Reliable. No more arguments with the language bar.
 
 - Hassle-free. No installation required, can run off thumb drive,
   doesn't change your profile, doesn't save anything to disk.
-
-- Can integrate with 
 
 * Download
 
@@ -30,7 +28,7 @@ If you've never used Mac OS X, trust me: that means it's easy.
 
 * Installation
 
-Copy kbswitch2's =bi= folder somewhere (rename it if you like), and
+Copy kbswitch2's =bin= folder somewhere (rename it if you like), and
 run =kbswitch2.exe=. You could put a shortcut to it in the Startup
 folder of your Start Menu, so that it runs when Windows starts.
 
@@ -82,6 +80,31 @@ running, it will be started.
 For example, to select the Dvorak layout:
 
 : kbswitch2 "united states-dvorak"
+
+When you change the keyboard layout from the command line, the tooltip
+will pop up for a second so that you know it's taken effect.
+
+* Using with AutoHotKey
+
+(=kbswitch2= should be usable with any keyboard shortcut program; I
+just happen to be a user of [[http://www.autohotkey.com/][AutoHotkey]]!)
+
+You can use the command line options to run =kbswitch2= from
+[[http://www.autohotkey.com/][AutoHotkey]], so that you can have keyboard shortcuts for cycling
+keyboard layouts or selecting particular layouts.
+
+For example, you could use something like this, to cycle through the
+keyboard layouts when Windows+Space is pressed, as in Windows 8:
+
+: #Space::Run c:\kbswitch\kbswitch2.exe /nextLayout
+
+Or you could use something like this, to select the Dvorak layout when
+Windows+D is pressed:
+
+: #d::Run c:\kbswitch\kbswitch2.exe "united states-dvorak"
+
+(Replace =c:\kbswitch\= above with the directory you're running
+=kbswitch2= from.)
 
 * Notes
 
